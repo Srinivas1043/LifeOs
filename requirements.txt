@@ -4,3 +4,4 @@ pandas
 plotly
 langchain-groq
 langchain-core
+openpyxl

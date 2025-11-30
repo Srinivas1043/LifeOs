@@ -91,7 +91,7 @@ def get_user_profile():
         return None
 
 # --- Expenses ---
-def add_expense(date, amount, category_id, account_id, description, payment_method, currency="EUR", vendor=None):
+def add_expense(date, amount, category_id, account_id, description, payment_method, currency="EUR", vendor=None, source="manual"):
     """Add a new expense with currency conversion."""
     try:
         supabase = get_authenticated_client()
@@ -115,7 +115,7 @@ def add_expense(date, amount, category_id, account_id, description, payment_meth
             "description": description,
             "payment_method": payment_method,
             "vendor": vendor,
-            "source": "manual",
+            "source": source,
             "user_id": user.id
         }
         response = supabase.table("expenses").insert(data).execute()
