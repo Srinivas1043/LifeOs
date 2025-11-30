@@ -25,26 +25,23 @@ with tab1:
         submitted = st.form_submit_button("Add Account")
         if submitted:
             if name:
-                try:
-                    data = {"name": name, "type": type_, "balance": balance, "currency": currency}
-                    supabase.table("accounts").insert(data).execute()
+                # Use helper function which handles user_id
+                res = add_account(name, type_, balance, currency)
+                if res:
                     st.success(f"Account '{name}' added!")
                     st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
             else:
                 st.warning("Please enter a name.")
 
     # List Accounts
     st.subheader("Existing Accounts")
-    try:
-        response = supabase.table("accounts").select("*").execute()
-        if response.data:
-            st.dataframe(pd.DataFrame(response.data))
-        else:
-            st.info("No accounts found.")
-    except Exception as e:
-        st.error(f"Error fetching accounts: {e}")
+    df_accounts = get_accounts()
+    if not df_accounts.empty:
+        # Hide technical columns
+        display_cols = [c for c in df_accounts.columns if c not in ['id', 'user_id', 'created_at']]
+        st.dataframe(df_accounts[display_cols], use_container_width=True)
+    else:
+        st.info("No accounts found.")
 
 with tab2:
     st.header("Manage Categories")
@@ -58,23 +55,20 @@ with tab2:
         cat_submitted = st.form_submit_button("Add Category")
         if cat_submitted:
             if cat_name:
-                try:
-                    data = {"name": cat_name, "type": cat_type}
-                    supabase.table("categories").insert(data).execute()
+                # Use helper function
+                res = add_category(cat_name, cat_type)
+                if res:
                     st.success(f"Category '{cat_name}' added!")
                     st.rerun()
-                except Exception as e:
-                    st.error(f"Error: {e}")
             else:
                 st.warning("Please enter a name.")
 
     # List Categories
     st.subheader("Existing Categories")
-    try:
-        response = supabase.table("categories").select("*").execute()
-        if response.data:
-            st.dataframe(pd.DataFrame(response.data))
-        else:
-            st.info("No categories found.")
-    except Exception as e:
-        st.error(f"Error fetching categories: {e}")
+    df_cats = get_categories()
+    if not df_cats.empty:
+        # Hide technical columns
+        display_cols = [c for c in df_cats.columns if c not in ['id', 'user_id', 'created_at']]
+        st.dataframe(df_cats[display_cols], use_container_width=True)
+    else:
+        st.info("No categories found.")

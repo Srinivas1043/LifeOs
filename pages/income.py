@@ -43,6 +43,8 @@ else:
 st.subheader("📜 Income History")
 income_data = get_income()
 if not income_data.empty:
-    st.dataframe(income_data, use_container_width=True)
+    # Hide technical columns
+    display_cols = [c for c in income_data.columns if c not in ['id', 'user_id', 'created_at', 'category_id', 'account_id']]
+    st.dataframe(income_data[display_cols], use_container_width=True)
 else:
     st.info("No income recorded yet.")

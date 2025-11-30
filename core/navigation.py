@@ -82,7 +82,10 @@ def setup_navigation():
         
         # User Info
         if 'user' in st.session_state:
-            st.caption(f"Logged in as: {st.session_state['user'].email}")
+            user = st.session_state['user']
+            full_name = user.user_metadata.get('full_name', 'User')
+            st.markdown(f"### 👋 Hi, {full_name}")
+            st.caption(f"{user.email}")
         
         # Module Selector
         module = st.selectbox("Module", ["Finance", "AI Tools", "System"])

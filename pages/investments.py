@@ -44,6 +44,8 @@ else:
 st.subheader("💼 Portfolio")
 inv_data = get_investments()
 if not inv_data.empty:
-    st.dataframe(inv_data, use_container_width=True)
+    # Hide technical columns
+    display_cols = [c for c in inv_data.columns if c not in ['id', 'user_id', 'created_at', 'category_id', 'account_id']]
+    st.dataframe(inv_data[display_cols], use_container_width=True)
 else:
     st.info("No investments recorded.")

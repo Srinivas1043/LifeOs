@@ -46,6 +46,8 @@ else:
 st.subheader("📜 Expense History")
 expenses = get_expenses()
 if not expenses.empty:
-    st.dataframe(expenses, use_container_width=True)
+    # Hide technical columns
+    display_cols = [c for c in expenses.columns if c not in ['id', 'user_id', 'created_at', 'category_id', 'account_id']]
+    st.dataframe(expenses[display_cols], use_container_width=True)
 else:
     st.info("No expenses recorded yet.")

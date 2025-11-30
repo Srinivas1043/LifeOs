@@ -1,13 +1,12 @@
-from core.supabase_client import init_supabase
+from core.supabase_client import get_authenticated_client
 import pandas as pd
 import streamlit as st
-
-supabase = init_supabase()
 
 # --- Helper Functions ---
 def add_category(name, type):
     """Add a new category."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -23,6 +22,7 @@ def add_category(name, type):
 def get_categories(type_filter=None):
     """Fetch categories, optionally filtered by type (expense, income, etc.)."""
     try:
+        supabase = get_authenticated_client()
         query = supabase.table("categories").select("*")
         if type_filter:
             query = query.eq("type", type_filter)
@@ -35,6 +35,7 @@ def get_categories(type_filter=None):
 def add_account(name, type, balance, currency="EUR"):
     """Add a new account."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -56,6 +57,7 @@ def add_account(name, type, balance, currency="EUR"):
 def get_accounts():
     """Fetch all accounts."""
     try:
+        supabase = get_authenticated_client()
         response = supabase.table("accounts").select("*").execute()
         return pd.DataFrame(response.data)
     except Exception as e:
@@ -66,6 +68,7 @@ def get_accounts():
 def add_expense(date, amount, category_id, account_id, description, payment_method, vendor=None):
     """Add a new expense."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -91,6 +94,7 @@ def add_expense(date, amount, category_id, account_id, description, payment_meth
 def get_expenses():
     """Fetch expenses with category and account details."""
     try:
+        supabase = get_authenticated_client()
         # Supabase join syntax: table(column, ...)
         response = supabase.table("expenses").select(
             "*, categories(name), accounts(name)"
@@ -112,6 +116,7 @@ def get_expenses():
 def add_income(date, amount, category_id, account_id, source, notes=None):
     """Add a new income record."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -135,6 +140,7 @@ def add_income(date, amount, category_id, account_id, source, notes=None):
 def get_income():
     """Fetch income records."""
     try:
+        supabase = get_authenticated_client()
         response = supabase.table("income").select(
             "*, categories(name), accounts(name)"
         ).order("date", desc=True).execute()
@@ -153,6 +159,7 @@ def get_income():
 def add_saving_goal(name, target_amount, deadline, notes=None):
     """Add a new savings goal."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -174,6 +181,7 @@ def add_saving_goal(name, target_amount, deadline, notes=None):
 def get_saving_goals():
     """Fetch all savings goals."""
     try:
+        supabase = get_authenticated_client()
         response = supabase.table("saving_goals").select("*").execute()
         return pd.DataFrame(response.data)
     except Exception as e:
@@ -184,6 +192,7 @@ def get_saving_goals():
 def add_investment(date, amount, instrument_name, investment_type, action, account_id, category_id, units, price_per_unit):
     """Add a new investment transaction."""
     try:
+        supabase = get_authenticated_client()
         user = st.session_state.get('user')
         if not user:
             st.error("User not authenticated")
@@ -211,6 +220,7 @@ def add_investment(date, amount, instrument_name, investment_type, action, accou
 def get_investments():
     """Fetch all investments."""
     try:
+        supabase = get_authenticated_client()
         response = supabase.table("investments").select("*").execute()
         return pd.DataFrame(response.data)
     except Exception as e:
