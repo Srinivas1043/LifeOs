@@ -8,7 +8,12 @@ supabase = init_supabase()
 def add_category(name, type):
     """Add a new category."""
     try:
-        data = {"name": name, "type": type}
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
+        data = {"name": name, "type": type, "user_id": user.id}
         response = supabase.table("categories").insert(data).execute()
         return response
     except Exception as e:
@@ -30,11 +35,17 @@ def get_categories(type_filter=None):
 def add_account(name, type, balance, currency="EUR"):
     """Add a new account."""
     try:
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
         data = {
             "name": name, 
             "type": type, 
             "balance": balance, 
-            "currency": currency
+            "currency": currency,
+            "user_id": user.id
         }
         response = supabase.table("accounts").insert(data).execute()
         return response
@@ -55,6 +66,11 @@ def get_accounts():
 def add_expense(date, amount, category_id, account_id, description, payment_method, vendor=None):
     """Add a new expense."""
     try:
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
         data = {
             "date": str(date),
             "amount": amount,
@@ -63,7 +79,8 @@ def add_expense(date, amount, category_id, account_id, description, payment_meth
             "description": description,
             "payment_method": payment_method,
             "vendor": vendor,
-            "source": "manual"
+            "source": "manual",
+            "user_id": user.id
         }
         response = supabase.table("expenses").insert(data).execute()
         return response
@@ -95,13 +112,19 @@ def get_expenses():
 def add_income(date, amount, category_id, account_id, source, notes=None):
     """Add a new income record."""
     try:
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
         data = {
             "date": str(date),
             "amount": amount,
             "category_id": category_id,
             "account_id": account_id,
             "source": source,
-            "notes": notes
+            "notes": notes,
+            "user_id": user.id
         }
         response = supabase.table("income").insert(data).execute()
         return response
@@ -130,11 +153,17 @@ def get_income():
 def add_saving_goal(name, target_amount, deadline, notes=None):
     """Add a new savings goal."""
     try:
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
         data = {
             "goal_name": name,
             "target_amount": target_amount,
             "deadline": str(deadline),
-            "notes": notes
+            "notes": notes,
+            "user_id": user.id
         }
         response = supabase.table("saving_goals").insert(data).execute()
         return response
@@ -155,6 +184,11 @@ def get_saving_goals():
 def add_investment(date, amount, instrument_name, investment_type, action, account_id, category_id, units, price_per_unit):
     """Add a new investment transaction."""
     try:
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
         data = {
             "date": str(date),
             "amount": amount,
@@ -165,7 +199,8 @@ def add_investment(date, amount, instrument_name, investment_type, action, accou
             "category_id": category_id,
             "units": units,
             "price_per_unit": price_per_unit,
-            "source": "manual"
+            "source": "manual",
+            "user_id": user.id
         }
         response = supabase.table("investments").insert(data).execute()
         return response

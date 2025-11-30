@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 import json
 import base64
 from langchain_core.messages import HumanMessage
