@@ -15,62 +15,88 @@ with st.spinner("Loading financial data..."):
     income_df = get_income()
     investments_df = get_investments()
     accounts_df = get_accounts()
+    rates = get_exchange_rates()
+
+# --- Currency Selector ---
+with st.sidebar:
+    st.divider()
+    st.subheader("💱 Analysis Currency")
+    # Default to EUR, but allow switching
+    available_currencies = list(rates.keys()) if rates else ['EUR']
+    if 'EUR' not in available_currencies: available_currencies.append('EUR')
+    
+    display_currency = st.selectbox("View Dashboard In:", available_currencies, index=available_currencies.index('EUR') if 'EUR' in available_currencies else 0)
+    
+    # Calculate conversion factor (EUR -> Selected)
+    # Rate stored is X -> EUR. So 1 Unit = Rate EUR.
+    # To go EUR -> X, we divide by Rate.
+    # Ex: USD -> EUR is 0.92. So 1 USD = 0.92 EUR.
+    # 100 EUR = 100 / 0.92 = 108.69 USD.
+    conversion_rate = rates.get(display_currency, 1.0)
+    if conversion_rate == 0: conversion_rate = 1.0 # Avoid div by zero
 
 # Calculate Metrics
 # Use amount_eur if available, else fallback to amount (assuming EUR for legacy)
 if not income_df.empty:
     income_df['amount_eur'] = income_df.get('amount_eur', income_df['amount']).fillna(income_df['amount'])
-    total_income = income_df['amount_eur'].sum()
+    total_income_eur = income_df['amount_eur'].sum()
 else:
-    total_income = 0
+    total_income_eur = 0
 
 if not expenses_df.empty:
     expenses_df['amount_eur'] = expenses_df.get('amount_eur', expenses_df['amount']).fillna(expenses_df['amount'])
-    total_expenses = expenses_df['amount_eur'].sum()
+    total_expenses_eur = expenses_df['amount_eur'].sum()
 else:
-    total_expenses = 0
-net_savings = total_income - total_expenses
+    total_expenses_eur = 0
+
+net_savings_eur = total_income_eur - total_expenses_eur
 
 if not investments_df.empty:
     investments_df['amount_eur'] = investments_df.get('amount_eur', investments_df['amount']).fillna(investments_df['amount'])
-    total_invested = investments_df['amount_eur'].sum()
+    total_invested_eur = investments_df['amount_eur'].sum()
 else:
-    total_invested = 0
-current_investment_value = 0 # Placeholder for now, would need live data or manual update
-if not investments_df.empty and 'current_value' in investments_df.columns:
-     current_investment_value = investments_df['current_value'].sum()
+    total_invested_eur = 0
 
-total_balance = 0
+# Account Balance (Already converted to EUR in previous step, let's refine that loop)
+total_balance_eur = 0
 if not accounts_df.empty:
-    rates = get_exchange_rates()
     for index, row in accounts_df.iterrows():
         currency = row.get('currency', 'EUR')
         balance = row['balance']
         rate = rates.get(currency, 1.0)
-        total_balance += balance * rate
+        total_balance_eur += balance * rate
+
+# --- Convert to Display Currency ---
+total_income = total_income_eur / conversion_rate
+total_expenses = total_expenses_eur / conversion_rate
+net_savings = net_savings_eur / conversion_rate
+total_invested = total_invested_eur / conversion_rate
+total_balance = total_balance_eur / conversion_rate
 
 # Display Metrics
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.metric(label="Total Balance", value=f"€{total_balance:,.2f}")
+    st.metric(label=f"Total Balance ({display_currency})", value=f"{total_balance:,.2f}")
 
 with col2:
-    st.metric(label="Net Savings (All Time)", value=f"€{net_savings:,.2f}", delta=f"{((net_savings/total_income)*100) if total_income > 0 else 0:.1f}% Rate")
+    st.metric(label=f"Net Savings ({display_currency})", value=f"{net_savings:,.2f}", delta=f"{((net_savings/total_income)*100) if total_income > 0 else 0:.1f}% Rate")
 
 with col3:
-    st.metric(label="Total Invested", value=f"€{total_invested:,.2f}")
+    st.metric(label=f"Total Invested ({display_currency})", value=f"{total_invested:,.2f}")
 
 with col4:
-    st.metric(label="Monthly Spend (Avg)", value=f"€{total_expenses:,.2f}") # Placeholder logic
+    st.metric(label=f"Monthly Spend ({display_currency})", value=f"{total_expenses:,.2f}")
 
 # --- Visualizations ---
 col_left, col_right = st.columns(2)
 
 with col_left:
-    st.subheader("Spending by Category (EUR)")
+    st.subheader(f"Spending by Category ({display_currency})")
     if not expenses_df.empty:
-        fig_exp = px.pie(expenses_df, values='amount_eur', names='category', hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+        # Convert individual rows for the chart
+        expenses_df['amount_display'] = expenses_df['amount_eur'] / conversion_rate
+        fig_exp = px.pie(expenses_df, values='amount_display', names='category', hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
         st.plotly_chart(fig_exp, use_container_width=True)
     else:
         st.info("No expense data available.")
