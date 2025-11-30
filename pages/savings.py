@@ -1,8 +1,11 @@
 import streamlit as st
 import pandas as pd
 from core.finance_queries import add_saving_goal, get_saving_goals
+from core.navigation import setup_navigation
 
-st.title("🐷 Savings Goals")
+setup_navigation()
+
+st.title("🎯 Savings Goals")
 
 with st.expander("➕ Add New Savings Goal", expanded=False):
     with st.form("add_goal_form"):
@@ -31,16 +34,11 @@ goals = get_saving_goals()
 
 if not goals.empty:
     for index, row in goals.iterrows():
-        # Calculate progress (mock logic for now as we don't have a 'savings' transactions table linked to goals yet in the simple UI)
-        # In a real app, we'd sum up 'savings' transactions linked to this goal_id.
-        # For now, we'll just show the goal details.
-        
         st.markdown(f"### {row['goal_name']}")
         col1, col2, col3 = st.columns(3)
         col1.metric("Target", f"€{row['target_amount']:,.2f}")
         col2.metric("Deadline", row['deadline'])
         
-        # Placeholder for progress bar
         st.progress(0) 
         st.caption("Link savings transactions to goals coming soon.")
         st.divider()

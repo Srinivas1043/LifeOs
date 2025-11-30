@@ -2,48 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from core.finance_queries import get_expenses, get_income, get_investments, get_accounts
+from core.navigation import setup_navigation
 
-st.set_page_config(
-    page_title="Life OS",
-    page_icon="🧬",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+# Setup Navigation & Theme
+setup_navigation()
 
-# --- CSS for Aesthetics ---
-st.markdown("""
-<style>
-    /* Global Font */
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Metric Cards */
-    div[data-testid="stMetric"] {
-        background-color: #262730;
-        border: 1px solid #464b5d;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Headers */
-    h1, h2, h3 {
-        color: #FAFAFA;
-    }
-    
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #111111;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-st.title("🧬 Life OS Dashboard")
-
-# --- Sidebar ---
-st.sidebar.title("Navigation")
-st.sidebar.info("Welcome to your personal Life OS.")
+st.title("💰 Financial Overview")
 
 # --- Data Loading ---
 with st.spinner("Loading financial data..."):
@@ -51,9 +15,6 @@ with st.spinner("Loading financial data..."):
     income_df = get_income()
     investments_df = get_investments()
     accounts_df = get_accounts()
-
-# --- Financial Overview ---
-st.header("💰 Financial Overview")
 
 # Calculate Metrics
 total_income = income_df['amount'].sum() if not income_df.empty else 0

@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 from core.finance_queries import get_expenses, get_income
+from core.navigation import setup_navigation
+
+setup_navigation()
 
 st.title("🏛️ Tax Center")
 

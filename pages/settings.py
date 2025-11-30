@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
+from core.finance_queries import add_account, add_category, get_accounts, get_categories
 from core.supabase_client import init_supabase
+from core.navigation import setup_navigation
 
+setup_navigation()
 supabase = init_supabase()
 
 st.title("⚙️ Settings")

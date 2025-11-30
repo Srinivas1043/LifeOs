@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
-from core.finance_queries import add_expense, get_expenses, get_categories, get_accounts
+from core.finance_queries import get_categories, get_accounts, add_expense, get_expenses
+from core.navigation import setup_navigation
+
+setup_navigation()
 
 st.title("💸 Expenses")
 
@@ -35,14 +38,6 @@ else:
                 
                 res = add_expense(date, amount, cat_id, acc_id, description, payment_method, vendor)
                 
-                # Handle Tags (Simple implementation: just storing in description or needing a new function)
-                # Since we haven't updated add_expense to handle tags yet, we'll append them to description for now
-                # or we can update the backend function. Let's update the backend function next.
-                if res and tags:
-                    # Ideally we insert into transaction_tags table here
-                    # For now, let's just assume the user knows we are adding it to the system
-                    pass 
-
                 if res:
                     st.success("Expense added successfully!")
                     st.rerun()

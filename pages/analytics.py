@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 from core.finance_queries import get_expenses, get_income
 import datetime
+from core.navigation import setup_navigation
+
+setup_navigation()
 
 st.title("📊 Analytics & P&L")
 
