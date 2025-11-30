@@ -76,6 +76,20 @@ def get_exchange_rates():
         st.error(f"Error fetching rates: {e}")
         return {'EUR': 1.0}
 
+def get_user_profile():
+    """Fetch user profile from DB."""
+    try:
+        supabase = get_authenticated_client()
+        user = st.session_state.get('user')
+        if not user:
+            return None
+        
+        response = supabase.table("profiles").select("*").eq("id", user.id).single().execute()
+        return response.data
+    except Exception as e:
+        # Fail silently or log if needed, but don't break UI
+        return None
+
 # --- Expenses ---
 def add_expense(date, amount, category_id, account_id, description, payment_method, currency="EUR", vendor=None):
     """Add a new expense with currency conversion."""

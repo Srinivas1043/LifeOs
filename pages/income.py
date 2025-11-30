@@ -44,11 +44,34 @@ else:
                     st.rerun()
 
 # View Income
+# View Income
 st.subheader("📜 Income History")
 income_data = get_income()
+
+# --- Currency Config ---
+display_currency = st.session_state.get('currency', 'EUR')
+conversion_rate = st.session_state.get('conversion_rate', 1.0)
+if conversion_rate == 0: conversion_rate = 1.0
+
 if not income_data.empty:
-    # Hide technical columns
-    display_cols = [c for c in income_data.columns if c not in ['id', 'user_id', 'created_at', 'category_id', 'account_id']]
-    st.dataframe(income_data[display_cols], use_container_width=True)
+    # Convert for display
+    income_data['amount_eur'] = income_data.get('amount_eur', income_data['amount']).fillna(income_data['amount'])
+    income_data['amount_display'] = income_data['amount_eur'] / conversion_rate
+    
+    for index, row in income_data.iterrows():
+        with st.container():
+            col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+            with col1:
+                st.caption(str(row['date']))
+                st.markdown(f"**{row['category']}**")
+            with col2:
+                st.text(row['source'])
+                st.caption(f"{row['account']}")
+            with col3:
+                st.markdown(f"**{display_currency} {row['amount_display']:,.2f}**")
+            with col4:
+                if row.get('notes'):
+                    st.caption(f"Notes: {row['notes']}")
+            st.divider()
 else:
     st.info("No income recorded yet.")

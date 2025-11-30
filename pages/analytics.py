@@ -13,6 +13,11 @@ st.title("📊 Analytics & P&L")
 expenses_df = get_expenses()
 income_df = get_income()
 
+# --- Currency Config ---
+display_currency = st.session_state.get('currency', 'EUR')
+conversion_rate = st.session_state.get('conversion_rate', 1.0)
+if conversion_rate == 0: conversion_rate = 1.0
+
 # Ensure date columns are datetime
 if not expenses_df.empty:
     expenses_df['date'] = pd.to_datetime(expenses_df['date'])
@@ -57,17 +62,29 @@ if not expenses_df.empty:
 if not income_df.empty:
     filtered_income = income_df[(income_df['date'].dt.date >= start_date) & (income_df['date'].dt.date <= end_date)]
 
-# --- P&L Statement ---
+# --- Calculate EUR amounts for filtering/aggregation ---
+if not filtered_expenses.empty:
+    filtered_expenses['amount_eur'] = filtered_expenses.get('amount_eur', filtered_expenses['amount']).fillna(filtered_expenses['amount'])
+    total_expenses_eur = filtered_expenses['amount_eur'].sum()
+else:
+    total_expenses_eur = 0
+
+if not filtered_income.empty:
+    filtered_income['amount_eur'] = filtered_income.get('amount_eur', filtered_income['amount']).fillna(filtered_income['amount'])
+    total_income_eur = filtered_income['amount_eur'].sum()
+else:
+    total_income_eur = 0
 st.header(f"Profit & Loss ({start_date} to {end_date})")
 
-total_income = filtered_income['amount'].sum() if not filtered_income.empty else 0
-total_expenses = filtered_expenses['amount'].sum() if not filtered_expenses.empty else 0
-net_profit = total_income - total_expenses
+# Convert to display currency
+total_income_display = (total_income_eur / conversion_rate)
+total_expenses_display = (total_expenses_eur / conversion_rate)
+net_profit_display = total_income_display - total_expenses_display
 
 col1, col2, col3 = st.columns(3)
-col1.metric("Total Income", f"€{total_income:,.2f}", delta_color="normal")
-col2.metric("Total Expenses", f"€{total_expenses:,.2f}", delta_color="inverse")
-col3.metric("Net Profit / Loss", f"€{net_profit:,.2f}", delta=f"{net_profit:,.2f}")
+col1.metric("Total Income", f"{display_currency} {total_income_display:,.2f}", delta_color="normal")
+col2.metric("Total Expenses", f"{display_currency} {total_expenses_display:,.2f}", delta_color="inverse")
+col3.metric("Net Profit / Loss", f"{display_currency} {net_profit_display:,.2f}", delta=f"{net_profit_display:,.2f}")
 
 st.divider()
 
@@ -79,17 +96,19 @@ with tab1:
         col1, col2 = st.columns(2)
         with col1:
             # Category Pie Chart
-            fig_cat = px.pie(filtered_expenses, values='amount', names='category', title='Expenses by Category', hole=0.4)
+            # Convert for display
+            filtered_expenses['amount_display'] = filtered_expenses['amount_eur'] / conversion_rate
+            fig_cat = px.pie(filtered_expenses, values='amount_display', names='category', title=f'Expenses by Category ({display_currency})', hole=0.4)
             st.plotly_chart(fig_cat, use_container_width=True)
         
         with col2:
             # Payment Method Bar Chart
-            fig_method = px.bar(filtered_expenses, x='payment_method', y='amount', title='Spending by Method', color='payment_method')
+            fig_method = px.bar(filtered_expenses, x='payment_method', y='amount_display', title=f'Spending by Method ({display_currency})', color='payment_method')
             st.plotly_chart(fig_method, use_container_width=True)
         
         # Time Series
-        daily_spend = filtered_expenses.groupby('date')['amount'].sum().reset_index()
-        fig_trend = px.area(daily_spend, x='date', y='amount', title='Daily Spending Trend', line_shape='spline')
+        daily_spend = filtered_expenses.groupby('date')['amount_display'].sum().reset_index()
+        fig_trend = px.area(daily_spend, x='date', y='amount_display', title=f'Daily Spending Trend ({display_currency})', line_shape='spline')
         st.plotly_chart(fig_trend, use_container_width=True)
     else:
         st.info("No expense data for this period.")
@@ -97,7 +116,8 @@ with tab1:
 with tab2:
     st.subheader("Income Breakdown")
     if not filtered_income.empty:
-        fig_inc = px.bar(filtered_income, x='source', y='amount', title='Income by Source', color='source')
+        filtered_income['amount_display'] = filtered_income['amount_eur'] / conversion_rate
+        fig_inc = px.bar(filtered_income, x='source', y='amount_display', title=f'Income by Source ({display_currency})', color='source')
         st.plotly_chart(fig_inc, use_container_width=True)
     else:
         st.info("No income data for this period.")

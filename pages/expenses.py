@@ -47,11 +47,34 @@ else:
                     st.rerun()
 
 # View Expenses
+# View Expenses
 st.subheader("📜 Expense History")
 expenses = get_expenses()
+
+# --- Currency Config ---
+display_currency = st.session_state.get('currency', 'EUR')
+conversion_rate = st.session_state.get('conversion_rate', 1.0)
+if conversion_rate == 0: conversion_rate = 1.0
+
 if not expenses.empty:
-    # Hide technical columns
-    display_cols = [c for c in expenses.columns if c not in ['id', 'user_id', 'created_at', 'category_id', 'account_id']]
-    st.dataframe(expenses[display_cols], use_container_width=True)
+    # Convert for display
+    expenses['amount_eur'] = expenses.get('amount_eur', expenses['amount']).fillna(expenses['amount'])
+    expenses['amount_display'] = expenses['amount_eur'] / conversion_rate
+    
+    for index, row in expenses.iterrows():
+        with st.container():
+            col1, col2, col3, col4 = st.columns([2, 3, 2, 2])
+            with col1:
+                st.caption(str(row['date']))
+                st.markdown(f"**{row['category']}**")
+            with col2:
+                st.text(row['description'])
+                st.caption(f"{row['account']} • {row['payment_method']}")
+            with col3:
+                st.markdown(f"**{display_currency} {row['amount_display']:,.2f}**")
+            with col4:
+                if row.get('vendor'):
+                    st.caption(f"Vendor: {row['vendor']}")
+            st.divider()
 else:
     st.info("No expenses recorded yet.")

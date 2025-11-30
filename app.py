@@ -17,23 +17,11 @@ with st.spinner("Loading financial data..."):
     accounts_df = get_accounts()
     rates = get_exchange_rates()
 
-# --- Currency Selector ---
-with st.sidebar:
-    st.divider()
-    st.subheader("💱 Analysis Currency")
-    # Default to EUR, but allow switching
-    available_currencies = list(rates.keys()) if rates else ['EUR']
-    if 'EUR' not in available_currencies: available_currencies.append('EUR')
-    
-    display_currency = st.selectbox("View Dashboard In:", available_currencies, index=available_currencies.index('EUR') if 'EUR' in available_currencies else 0)
-    
-    # Calculate conversion factor (EUR -> Selected)
-    # Rate stored is X -> EUR. So 1 Unit = Rate EUR.
-    # To go EUR -> X, we divide by Rate.
-    # Ex: USD -> EUR is 0.92. So 1 USD = 0.92 EUR.
-    # 100 EUR = 100 / 0.92 = 108.69 USD.
-    conversion_rate = rates.get(display_currency, 1.0)
-    if conversion_rate == 0: conversion_rate = 1.0 # Avoid div by zero
+# --- Currency Config ---
+# Get currency from session state (set in navigation)
+display_currency = st.session_state.get('currency', 'EUR')
+conversion_rate = st.session_state.get('conversion_rate', 1.0)
+if conversion_rate == 0: conversion_rate = 1.0
 
 # Calculate Metrics
 # Use amount_eur if available, else fallback to amount (assuming EUR for legacy)
@@ -112,6 +100,19 @@ with col_right:
 # --- Recent Transactions ---
 st.subheader("Recent Activity")
 if not expenses_df.empty:
-    st.dataframe(expenses_df.head(5), use_container_width=True)
+    recent = expenses_df.head(5).copy()
+    recent['amount_display'] = recent['amount_eur'] / conversion_rate
+    
+    for index, row in recent.iterrows():
+        with st.container():
+            c1, c2, c3 = st.columns([3, 2, 2])
+            with c1:
+                st.markdown(f"**{row['description']}**")
+                st.caption(f"{row['category']} • {row['date']}")
+            with c2:
+                st.text(row['account'])
+            with c3:
+                st.markdown(f"**{display_currency} {row['amount_display']:,.2f}**")
+            st.divider()
 else:
     st.text("No recent transactions.")

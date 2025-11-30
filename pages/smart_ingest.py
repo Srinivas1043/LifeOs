@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import json
-import base64
-from langchain_core.messages import HumanMessage
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from core.ai_client import init_groq
@@ -12,7 +10,7 @@ from core.navigation import setup_navigation
 setup_navigation()
 
 st.title("🤖 Smart Ingestor")
-st.caption("Upload a receipt image or paste text to extract details.")
+st.caption("Paste text to extract details.")
 
 # --- Helper to get context ---
 def get_context():
@@ -20,96 +18,41 @@ def get_context():
     accs = get_accounts()['name'].tolist()
     return cats, accs
 
-# --- Tabs ---
-tab1, tab2 = st.tabs(["🖼️ Image Upload", "📝 Text Input"])
-
-with tab1:
-    uploaded_file = st.file_uploader("Upload Receipt", type=['png', 'jpg', 'jpeg'])
-    if uploaded_file and st.button("✨ Scan Receipt"):
-        with st.spinner("Analyzing image..."):
+# --- Text Input Only ---
+raw_text = st.text_area("Paste Receipt Text", height=150, placeholder="e.g. 'Uber ride on Oct 24 cost 15.50 euros'")
+if st.button("✨ Parse Text"):
+    if raw_text:
+        with st.spinner("Reading text..."):
             try:
-                # Encode image
-                image_bytes = uploaded_file.getvalue()
-                image_b64 = base64.b64encode(image_bytes).decode()
-                
-                # Init Vision Model
-                llm_vision = init_groq(model_name="llama-3.2-11b-vision-preview")
-                
+                llm = init_groq() # Default text model
                 cats, accs = get_context()
                 
-                prompt_text = f"""
-                Extract the following details from this receipt image:
-                - date (YYYY-MM-DD)
-                - amount (float)
-                - merchant (string)
-                - category (choose best match from: {cats})
-                - account (choose best match from: {accs})
-                - description (short summary)
-                
-                Return ONLY a valid JSON object. Do not include markdown formatting like ```json.
-                """
-                
-                msg = HumanMessage(
-                    content=[
-                        {"type": "text", "text": prompt_text},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
-                        },
-                    ]
+                parser = JsonOutputParser()
+                prompt = PromptTemplate(
+                    template="""
+                    Extract details:
+                    - date (YYYY-MM-DD)
+                    - amount (float)
+                    - merchant (string)
+                    - category (choose from: {categories})
+                    - account (choose from: {accounts})
+                    - description (short summary)
+                    
+                    Text: {text}
+                    
+                    {format_instructions}
+                    """,
+                    input_variables=["text", "categories", "accounts"],
+                    partial_variables={"format_instructions": parser.get_format_instructions()}
                 )
                 
-                response = llm_vision.invoke([msg])
+                chain = prompt | llm | parser
+                result = chain.invoke({"text": raw_text, "categories": cats, "accounts": accs})
                 
-                # Parse JSON
-                content = response.content
-                if "```json" in content:
-                    content = content.split("```json")[1].split("```")[0]
-                elif "```" in content:
-                    content = content.split("```")[1].split("```")[0]
-                
-                result = json.loads(content)
                 st.session_state['parsed_data'] = result
-                st.success("Image Scanned!")
-                
+                st.success("Text Parsed!")
             except Exception as e:
-                st.error(f"Vision Error: {e}")
-
-with tab2:
-    raw_text = st.text_area("Paste Receipt Text", height=150, placeholder="e.g. 'Uber ride on Oct 24 cost 15.50 euros'")
-    if st.button("✨ Parse Text"):
-        if raw_text:
-            with st.spinner("Reading text..."):
-                try:
-                    llm = init_groq() # Default text model
-                    cats, accs = get_context()
-                    
-                    parser = JsonOutputParser()
-                    prompt = PromptTemplate(
-                        template="""
-                        Extract details:
-                        - date (YYYY-MM-DD)
-                        - amount (float)
-                        - merchant (string)
-                        - category (choose from: {categories})
-                        - account (choose from: {accounts})
-                        - description (short summary)
-                        
-                        Text: {text}
-                        
-                        {format_instructions}
-                        """,
-                        input_variables=["text", "categories", "accounts"],
-                        partial_variables={"format_instructions": parser.get_format_instructions()}
-                    )
-                    
-                    chain = prompt | llm | parser
-                    result = chain.invoke({"text": raw_text, "categories": cats, "accounts": accs})
-                    
-                    st.session_state['parsed_data'] = result
-                    st.success("Text Parsed!")
-                except Exception as e:
-                    st.error(f"Text Error: {e}")
+                st.error(f"Text Error: {e}")
 
 # --- Review Section ---
 if 'parsed_data' in st.session_state:
@@ -128,7 +71,12 @@ if 'parsed_data' in st.session_state:
                 default_date = pd.to_datetime('today').date()
                 
             date = st.date_input("Date", value=default_date)
-            amount = st.number_input("Amount", value=float(data.get('amount', 0.0)))
+            col_amt, col_curr = st.columns([2, 1])
+            with col_amt:
+                amount = st.number_input("Amount", value=float(data.get('amount', 0.0)))
+            with col_curr:
+                currency = st.selectbox("Currency", ["EUR", "USD", "INR", "GBP"], index=0) # Default EUR
+            
             merchant = st.text_input("Merchant", value=data.get('merchant', ''))
         
         with col2:
@@ -147,6 +95,7 @@ if 'parsed_data' in st.session_state:
             
             category = st.selectbox("Category", cats, index=cat_idx)
             account = st.selectbox("Account", accs, index=acc_idx)
+            payment_method = st.selectbox("Payment Method", ["card", "upi", "bank", "cash", "tikkie"])
             
         description = st.text_area("Description", value=data.get('description', ''))
         
@@ -157,7 +106,7 @@ if 'parsed_data' in st.session_state:
             cat_id = int(get_categories()[get_categories()['name'] == category].iloc[0]['id'])
             acc_id = int(get_accounts()[get_accounts()['name'] == account].iloc[0]['id'])
             
-            res = add_expense(str(date), amount, cat_id, acc_id, description, "card", merchant)
+            res = add_expense(str(date), amount, cat_id, acc_id, description, payment_method, currency, merchant)
             if res:
                 st.success("Saved successfully!")
                 del st.session_state['parsed_data']
