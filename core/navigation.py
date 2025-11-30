@@ -133,6 +133,7 @@ def setup_navigation():
             
         elif module == "AI Tools":
             st.page_link("pages/smart_ingest.py", label="Smart Ingestor", icon="🤖")
+            st.page_link("pages/ai_assistant.py", label="AI Assistant", icon="💬")
             
         elif module == "System":
             st.page_link("pages/settings.py", label="Settings", icon="⚙️")
