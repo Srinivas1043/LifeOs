@@ -111,4 +111,4 @@ def setup_navigation():
             st.session_state['authenticated'] = False
             st.rerun()
             
-        st.caption("v1.1.0 • SaaS Mode")
+        st.caption("v1.2.0 • Life OS")

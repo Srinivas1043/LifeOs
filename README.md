@@ -1,6 +1,6 @@
-# 🧬 Life OS - Financial Tracker & SaaS Platform
+# 🧬 Life OS - Personal Finance Platform
 
-A comprehensive, AI-powered personal finance and life management system built with **Streamlit** and **Supabase**.
+A modern, AI-powered financial web application. Built for individuals to track their wealth, analyze spending, and manage their life.
 
 ## 🌟 Features
 
