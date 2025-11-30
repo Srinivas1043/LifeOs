@@ -1,4 +1,5 @@
 import streamlit as st
+from core.finance_queries import get_exchange_rates, get_user_profile
 
 def setup_navigation():
     """
@@ -83,10 +84,38 @@ def setup_navigation():
         # User Info
         if 'user' in st.session_state:
             user = st.session_state['user']
-            full_name = user.user_metadata.get('full_name', 'User')
+            # Try to fetch profile from DB
+            profile = get_user_profile()
+            full_name = profile.get('full_name', 'User') if profile else user.user_metadata.get('full_name', 'User')
             st.markdown(f"### 👋 Hi, {full_name}")
             st.caption(f"{user.email}")
         
+        st.divider()
+
+        # Global Currency Selector
+        if 'exchange_rates' not in st.session_state:
+             st.session_state['exchange_rates'] = get_exchange_rates()
+        
+        rates = st.session_state['exchange_rates']
+        available_currencies = list(rates.keys()) if rates else ['EUR']
+        if 'EUR' not in available_currencies: available_currencies.append('EUR')
+        
+        # Initialize global currency if not set
+        if 'currency' not in st.session_state:
+            st.session_state['currency'] = 'EUR'
+
+        selected_currency = st.selectbox(
+            "💱 Currency", 
+            available_currencies, 
+            index=available_currencies.index(st.session_state['currency']) if st.session_state['currency'] in available_currencies else 0
+        )
+        
+        # Update session state
+        st.session_state['currency'] = selected_currency
+        st.session_state['conversion_rate'] = rates.get(selected_currency, 1.0)
+
+        st.divider()
+
         # Module Selector
         module = st.selectbox("Module", ["Finance", "AI Tools", "System"])
         
@@ -100,9 +129,11 @@ def setup_navigation():
             st.page_link("pages/savings.py", label="Savings Goals", icon="🎯")
             st.page_link("pages/tax.py", label="Tax Center", icon="🏛️")
             st.page_link("pages/analytics.py", label="Analytics", icon="📊")
+            st.page_link("pages/monthly_report.py", label="Monthly Report", icon="📅")
             
         elif module == "AI Tools":
             st.page_link("pages/smart_ingest.py", label="Smart Ingestor", icon="🤖")
+            st.page_link("pages/ai_assistant.py", label="AI Assistant", icon="💬")
             
         elif module == "System":
             st.page_link("pages/settings.py", label="Settings", icon="⚙️")
