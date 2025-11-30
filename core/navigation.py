@@ -136,7 +136,6 @@ def setup_navigation():
             st.page_link("pages/ai_assistant.py", label="AI Assistant", icon="💬")
             
         elif module == "System":
-            st.page_link("pages/import_excel.py", label="Import Data", icon="📂")
             st.page_link("pages/settings.py", label="Settings", icon="⚙️")
             st.page_link("pages/admin.py", label="Admin", icon="🛡️")
             

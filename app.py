@@ -33,7 +33,16 @@ else:
 
 if not expenses_df.empty:
     expenses_df['amount_eur'] = expenses_df.get('amount_eur', expenses_df['amount']).fillna(expenses_df['amount'])
-    total_expenses_eur = expenses_df['amount_eur'].sum()
+    
+    # Calculate Monthly Spend
+    expenses_df['date'] = pd.to_datetime(expenses_df['date'])
+    current_month = pd.Timestamp.now().month
+    current_year = pd.Timestamp.now().year
+    
+    monthly_mask = (expenses_df['date'].dt.month == current_month) & (expenses_df['date'].dt.year == current_year)
+    monthly_expenses_eur = expenses_df.loc[monthly_mask, 'amount_eur'].sum()
+    
+    total_expenses_eur = monthly_expenses_eur # Update variable to reflect monthly only for the metric
 else:
     total_expenses_eur = 0
 
