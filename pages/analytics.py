@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from core.finance_queries import get_expenses, get_income
 import datetime
 from core.navigation import setup_navigation
@@ -88,7 +89,7 @@ col3.metric("Net Profit / Loss", f"{display_currency} {net_profit_display:,.2f}"
 
 st.divider()
 
-tab1, tab2 = st.tabs(["Spending Analysis", "Income Analysis"])
+tab1, tab2, tab3 = st.tabs(["Spending Analysis", "Income Analysis", "Advanced Insights"])
 
 with tab1:
     st.subheader("Spending Breakdown")
@@ -121,3 +122,94 @@ with tab2:
         st.plotly_chart(fig_inc, use_container_width=True)
     else:
         st.info("No income data for this period.")
+
+with tab3:
+    st.subheader("Advanced Insights")
+    
+    # --- Sankey Diagram ---
+    st.markdown("#### 🌊 Cash Flow Visualization")
+    if not filtered_expenses.empty and not filtered_income.empty:
+        # Nodes: Income Sources -> Budget -> Expense Categories
+        
+        # 1. Aggregate Income by Source
+        inc_agg = filtered_income.groupby('source')['amount_eur'].sum().reset_index()
+        
+        # 2. Aggregate Expenses by Category
+        exp_agg = filtered_expenses.groupby('category')['amount_eur'].sum().reset_index()
+        
+        # Create Node Labels
+        income_sources = inc_agg['source'].tolist()
+        expense_cats = exp_agg['category'].tolist()
+        all_nodes = income_sources + ["Budget"] + expense_cats
+        
+        # Map labels to indices
+        node_indices = {label: i for i, label in enumerate(all_nodes)}
+        
+        # Create Links
+        sources = []
+        targets = []
+        values = []
+        
+        # Income -> Budget
+        for _, row in inc_agg.iterrows():
+            sources.append(node_indices[row['source']])
+            targets.append(node_indices["Budget"])
+            values.append(row['amount_eur'] / conversion_rate)
+            
+        # Budget -> Expenses
+        for _, row in exp_agg.iterrows():
+            sources.append(node_indices["Budget"])
+            targets.append(node_indices[row['category']])
+            values.append(row['amount_eur'] / conversion_rate)
+            
+        # Plot
+        fig_sankey = go.Figure(data=[go.Sankey(
+            node=dict(
+                pad=15,
+                thickness=20,
+                line=dict(color="black", width=0.5),
+                label=all_nodes,
+                color="blue"
+            ),
+            link=dict(
+                source=sources,
+                target=targets,
+                value=values
+            )
+        )])
+        
+        fig_sankey.update_layout(title_text=f"Cash Flow ({display_currency})", font_size=10)
+        st.plotly_chart(fig_sankey, use_container_width=True)
+    else:
+        st.info("Need both Income and Expense data for Cash Flow visualization.")
+        
+    st.divider()
+    
+    # --- Top Merchants ---
+    st.markdown("#### 🏆 Top Merchants")
+    if not filtered_expenses.empty:
+        # Group by Vendor (fallback to description)
+        # We need a 'vendor' column. If it doesn't exist in the filtered df (e.g. old data), handle it.
+        if 'vendor' not in filtered_expenses.columns:
+            filtered_expenses['vendor'] = None
+            
+        # Fill missing vendors with Description (truncated)
+        filtered_expenses['merchant_display'] = filtered_expenses['vendor'].fillna(filtered_expenses['description'].str[:20])
+        
+        top_merchants = filtered_expenses.groupby('merchant_display')['amount_eur'].sum().nlargest(10).reset_index()
+        top_merchants['amount_display'] = top_merchants['amount_eur'] / conversion_rate
+        
+        fig_merch = px.bar(
+            top_merchants, 
+            x='amount_display', 
+            y='merchant_display', 
+            orientation='h',
+            title=f'Top Spending Destinations ({display_currency})',
+            labels={'amount_display': 'Amount', 'merchant_display': 'Merchant'},
+            color='amount_display',
+            color_continuous_scale='Viridis'
+        )
+        fig_merch.update_layout(yaxis={'categoryorder':'total ascending'})
+        st.plotly_chart(fig_merch, use_container_width=True)
+    else:
+        st.info("No expense data available.")

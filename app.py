@@ -90,12 +90,26 @@ with col_left:
         st.info("No expense data available.")
 
 with col_right:
-    st.subheader("Income vs Expenses")
-    if not expenses_df.empty or not income_df.empty:
-        # Simple bar chart logic would go here
-        st.info("Chart placeholder - add more data to visualize.")
+    st.subheader("My Accounts")
+    if not accounts_df.empty:
+        for index, row in accounts_df.iterrows():
+            # Convert balance
+            currency = row.get('currency', 'EUR')
+            balance = row['balance']
+            rate = rates.get(currency, 1.0)
+            balance_eur = balance * rate
+            balance_display = balance_eur / conversion_rate
+            
+            with st.container():
+                c1, c2 = st.columns([3, 2])
+                with c1:
+                    st.markdown(f"**{row['name']}**")
+                    st.caption(f"{row['type']}")
+                with c2:
+                    st.markdown(f"**{display_currency} {balance_display:,.2f}**")
+                st.divider()
     else:
-        st.info("No data available.")
+        st.info("No accounts configured.")
 
 # --- Recent Transactions ---
 st.subheader("Recent Activity")
