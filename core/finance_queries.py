@@ -119,6 +119,10 @@ def add_expense(date, amount, category_id, account_id, description, payment_meth
             "user_id": user.id
         }
         response = supabase.table("expenses").insert(data).execute()
+        
+        # Update Account Balance (Incremental)
+        adjust_account_balance(account_id, -amount_eur)
+        
         return response
     except Exception as e:
         st.error(f"Error adding expense: {e}")
@@ -128,16 +132,13 @@ def get_expenses():
     """Fetch expenses with category and account details."""
     try:
         supabase = get_authenticated_client()
-        # Supabase join syntax: table(column, ...)
         response = supabase.table("expenses").select(
             "*, categories(name), accounts(name)"
         ).order("date", desc=True).execute()
         
-        # Flatten the response if needed, or handle in UI
         data = response.data
         if data:
             df = pd.json_normalize(data)
-            # Rename columns for cleaner display
             df.rename(columns={'categories.name': 'category', 'accounts.name': 'account'}, inplace=True)
             return df
         return pd.DataFrame()
@@ -147,7 +148,7 @@ def get_expenses():
 
 # --- Income ---
 def add_income(date, amount, category_id, account_id, source, currency="EUR", notes=None):
-    """Add a new income record with currency conversion."""
+    """Add a new income record."""
     try:
         supabase = get_authenticated_client()
         user = st.session_state.get('user')
@@ -172,6 +173,10 @@ def add_income(date, amount, category_id, account_id, source, currency="EUR", no
             "user_id": user.id
         }
         response = supabase.table("income").insert(data).execute()
+        
+        # Update Account Balance (Incremental)
+        adjust_account_balance(account_id, amount_eur)
+        
         return response
     except Exception as e:
         st.error(f"Error adding income: {e}")
@@ -194,6 +199,34 @@ def get_income():
     except Exception as e:
         st.error(f"Error fetching income: {e}")
         return pd.DataFrame()
+
+def adjust_account_balance(account_id, amount_eur_delta):
+    """Incrementally update account balance."""
+    try:
+        supabase = get_authenticated_client()
+        
+        # Fetch account details
+        acc_res = supabase.table("accounts").select("currency, balance").eq("id", account_id).single().execute()
+        if not acc_res.data: return
+        
+        currency = acc_res.data.get('currency', 'EUR')
+        current_balance = acc_res.data.get('balance', 0.0)
+        if current_balance is None: current_balance = 0.0
+        
+        # Convert delta to Account Currency
+        rates = get_exchange_rates()
+        rate = rates.get(currency, 1.0)
+        if not rate: rate = 1.0
+        
+        amount_native_delta = amount_eur_delta / rate
+        
+        new_balance = current_balance + amount_native_delta
+        
+        # Update account
+        supabase.table("accounts").update({"balance": new_balance}).eq("id", account_id).execute()
+        
+    except Exception as e:
+        print(f"Error adjusting balance: {e}")
 
 # --- Savings ---
 def add_saving_goal(name, target_amount, deadline, notes=None):
