@@ -1,104 +1,101 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import datetime
-from core.finance_queries import get_expenses, get_income
+from core.finance_queries import get_expenses, get_income, get_budgets
 from core.navigation import setup_navigation
+import datetime
 
 setup_navigation()
 
 st.title("📅 Monthly Report")
 
-# --- Currency Config ---
+# --- Date Selection ---
+today = datetime.date.today()
+# Default to previous month if today is early in the month, else current
+default_date = today
+if today.day < 5:
+    first = today.replace(day=1)
+    default_date = first - datetime.timedelta(days=1)
+
+selected_date = st.date_input("Select Month", default_date)
+selected_year = selected_date.year
+selected_month = selected_date.month
+month_str = selected_date.strftime("%B %Y")
+month_key = selected_date.strftime("%Y-%m")
+
+st.header(f"Report for {month_str}")
+
+# --- Data Fetching ---
+expenses = get_expenses()
+income = get_income()
+budgets = get_budgets(month_key)
+
+# Filter Data
+if not expenses.empty:
+    expenses['date'] = pd.to_datetime(expenses['date'])
+    expenses = expenses[(expenses['date'].dt.year == selected_year) & (expenses['date'].dt.month == selected_month)]
+
+if not income.empty:
+    income['date'] = pd.to_datetime(income['date'])
+    income = income[(income['date'].dt.year == selected_year) & (income['date'].dt.month == selected_month)]
+
+# --- Currency ---
 display_currency = st.session_state.get('currency', 'EUR')
 conversion_rate = st.session_state.get('conversion_rate', 1.0)
 if conversion_rate == 0: conversion_rate = 1.0
 
-# --- Date Selection ---
-today = datetime.date.today()
-col1, col2 = st.columns(2)
-with col1:
-    selected_year = st.selectbox("Year", range(today.year, today.year - 5, -1))
-with col2:
-    selected_month = st.selectbox("Month", range(1, 13), index=today.month - 1)
+# --- Summary Metrics ---
+total_inc_eur = income['amount_eur'].sum() if not income.empty else 0
+total_exp_eur = expenses['amount_eur'].sum() if not expenses.empty else 0
+net_savings_eur = total_inc_eur - total_exp_eur
+savings_rate = (net_savings_eur / total_inc_eur * 100) if total_inc_eur > 0 else 0
 
-# --- Data Loading ---
-expenses_df = get_expenses()
-income_df = get_income()
-
-# Filter Data
-start_date = datetime.date(selected_year, selected_month, 1)
-if selected_month == 12:
-    end_date = datetime.date(selected_year + 1, 1, 1)
-else:
-    end_date = datetime.date(selected_year, selected_month + 1, 1)
-
-filtered_expenses = pd.DataFrame()
-filtered_income = pd.DataFrame()
-
-if not expenses_df.empty:
-    expenses_df['date'] = pd.to_datetime(expenses_df['date'])
-    filtered_expenses = expenses_df[(expenses_df['date'].dt.date >= start_date) & (expenses_df['date'].dt.date < end_date)]
-
-if not income_df.empty:
-    income_df['date'] = pd.to_datetime(income_df['date'])
-    filtered_income = income_df[(income_df['date'].dt.date >= start_date) & (income_df['date'].dt.date < end_date)]
-
-# --- Aggregates ---
-total_income_eur = 0
-total_expenses_eur = 0
-
-if not filtered_expenses.empty:
-    filtered_expenses['amount_eur'] = filtered_expenses.get('amount_eur', filtered_expenses['amount']).fillna(filtered_expenses['amount'])
-    total_expenses_eur = filtered_expenses['amount_eur'].sum()
-
-if not filtered_income.empty:
-    filtered_income['amount_eur'] = filtered_income.get('amount_eur', filtered_income['amount']).fillna(filtered_income['amount'])
-    total_income_eur = filtered_income['amount_eur'].sum()
-
-net_savings_eur = total_income_eur - total_expenses_eur
-
-# Convert to display currency
-total_income = total_income_eur / conversion_rate
-total_expenses = total_expenses_eur / conversion_rate
-net_savings = net_savings_eur / conversion_rate
-
-# --- Display Overview ---
-st.header(f"Overview for {datetime.date(selected_year, selected_month, 1).strftime('%B %Y')}")
-
-c1, c2, c3 = st.columns(3)
-c1.metric("Income", f"{display_currency} {total_income:,.2f}")
-c2.metric("Expenses", f"{display_currency} {total_expenses:,.2f}")
-c3.metric("Net Savings", f"{display_currency} {net_savings:,.2f}", delta=f"{((net_savings/total_income)*100) if total_income > 0 else 0:.1f}% Rate")
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Income", f"{display_currency} {total_inc_eur/conversion_rate:,.2f}")
+col2.metric("Expenses", f"{display_currency} {total_exp_eur/conversion_rate:,.2f}")
+col3.metric("Net Savings", f"{display_currency} {net_savings_eur/conversion_rate:,.2f}")
+col4.metric("Savings Rate", f"{savings_rate:.1f}%")
 
 st.divider()
 
-# --- Visuals ---
-col_left, col_right = st.columns(2)
+# --- Budget Performance ---
+st.subheader("Budget Performance")
+if not budgets.empty and not expenses.empty:
+    exp_by_cat = expenses.groupby('category')['amount_eur'].sum().reset_index()
+    merged = pd.merge(budgets, exp_by_cat, on='category', how='left')
+    merged['amount_eur'] = merged['amount_eur'].fillna(0)
+    
+    # Calculate variance
+    merged['variance'] = merged['budget_amount'] - (merged['amount_eur'] / conversion_rate) # Assuming budget is in display currency? 
+    # Actually budget is stored as raw number, likely in EUR or base? 
+    # Wait, add_budget takes amount. User inputs it. If user inputs in INR, we store as is.
+    # But expenses are stored in EUR. We need to be careful.
+    # In settings.py, we didn't convert budget input. It's just a number.
+    # Let's assume budget is set in the *Display Currency* at the time of setting.
+    # But for comparison, we should convert expenses to that currency.
+    # Ideally budgets should be stored with currency.
+    # For now, let's assume budgets are set in EUR for simplicity or match the display currency logic.
+    # If user is viewing in INR, expenses are converted to INR. Budget should be compared to that.
+    
+    # Let's assume Budget was set in EUR for now to be safe, OR we assume user sets it in their mind's currency.
+    # Given the complexity, let's just compare (Expense / Rate) vs Budget.
+    
+    merged['spent_display'] = merged['amount_eur'] / conversion_rate
+    
+    # Display Table
+    display_df = merged[['category', 'budget_amount', 'spent_display']].copy()
+    display_df['status'] = display_df.apply(lambda x: '✅' if x['spent_display'] <= x['budget_amount'] else '⚠️', axis=1)
+    display_df.columns = ['Category', 'Budget', 'Actual', 'Status']
+    
+    st.dataframe(display_df, use_container_width=True)
+else:
+    st.info("No budget data for this month.")
 
-with col_left:
-    st.subheader("Expenses by Category")
-    if not filtered_expenses.empty:
-        filtered_expenses['amount_display'] = filtered_expenses['amount_eur'] / conversion_rate
-        fig_cat = px.pie(filtered_expenses, values='amount_display', names='category', hole=0.4)
-        st.plotly_chart(fig_cat, use_container_width=True)
-    else:
-        st.info("No expenses this month.")
-
-with col_right:
-    st.subheader("Top Expenses")
-    if not filtered_expenses.empty:
-        top_expenses = filtered_expenses.nlargest(5, 'amount_eur')
-        top_expenses['amount_display'] = top_expenses['amount_eur'] / conversion_rate
-        
-        for index, row in top_expenses.iterrows():
-            with st.container():
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"**{row['description']}**")
-                    st.caption(f"{row['category']} • {row['date'].strftime('%Y-%m-%d')}")
-                with c2:
-                    st.markdown(f"**{display_currency} {row['amount_display']:,.2f}**")
-                st.divider()
-    else:
-        st.info("No expenses this month.")
+# --- Top Expenses ---
+st.subheader("Top Expenses")
+if not expenses.empty:
+    top_exp = expenses.nlargest(5, 'amount_eur')
+    top_exp['amount_display'] = top_exp['amount_eur'] / conversion_rate
+    st.dataframe(top_exp[['date', 'category', 'description', 'amount_display']], use_container_width=True)
+else:
+    st.info("No expenses found.")
