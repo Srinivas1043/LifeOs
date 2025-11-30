@@ -72,3 +72,59 @@ with tab2:
         st.dataframe(df_cats[display_cols], use_container_width=True)
     else:
         st.info("No categories found.")
+
+    # Budget Configuration
+    st.divider()
+    st.header("Budget Configuration")
+    
+    if not df_cats.empty:
+        expense_cats = df_cats[df_cats['type'] == 'expense']
+        
+        if not expense_cats.empty:
+            from core.finance_queries import add_budget, get_budgets
+            import datetime
+            
+            # Month Selector
+            current_month = datetime.date.today().strftime("%Y-%m")
+            selected_month = st.text_input("Budget Month (YYYY-MM)", value=current_month)
+            
+            # Fetch existing budgets
+            existing_budgets = get_budgets(selected_month)
+            budget_map = {}
+            if not existing_budgets.empty:
+                budget_map = dict(zip(existing_budgets['category_id'], existing_budgets['budget_amount']))
+            
+            st.write("Set monthly limits for your expense categories:")
+            
+            with st.form("budget_form"):
+                budget_inputs = {}
+                cols = st.columns(2)
+                
+                for i, (index, row) in enumerate(expense_cats.iterrows()):
+                    cat_id = row['id']
+                    cat_name = row['name']
+                    current_val = budget_map.get(cat_id, 0.0)
+                    
+                    with cols[i % 2]:
+                        budget_inputs[cat_id] = st.number_input(
+                            f"{cat_name} Limit", 
+                            min_value=0.0, 
+                            value=float(current_val), 
+                            step=10.0,
+                            key=f"budget_{cat_id}"
+                        )
+                
+                if st.form_submit_button("Save Budgets"):
+                    success_count = 0
+                    for cat_id, amount in budget_inputs.items():
+                        if amount > 0 or cat_id in budget_map: # Save if > 0 or if updating existing
+                             add_budget(cat_id, amount, selected_month)
+                             success_count += 1
+                    
+                    if success_count > 0:
+                        st.success(f"Updated budgets for {success_count} categories!")
+                        st.rerun()
+        else:
+            st.info("No expense categories found to budget for.")
+    else:
+        st.info("Add categories first to set budgets.")

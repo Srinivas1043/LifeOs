@@ -89,6 +89,58 @@ col3.metric("Net Profit / Loss", f"{display_currency} {net_profit_display:,.2f}"
 
 st.divider()
 
+# --- Budget vs Actual ---
+st.header("🎯 Budget vs Actual")
+
+from core.finance_queries import get_budgets
+current_month_str = start_date.strftime("%Y-%m") # Use start date of filter or today?
+# Better to use the month from the filter if it's "Last 30 Days" or "Custom", but budgets are monthly.
+# Let's default to the month of the 'end_date' of the filter for now, or just current month.
+# Simplest: Show budget for the month containing 'end_date'
+budget_month = end_date.strftime("%Y-%m")
+budgets_df = get_budgets(budget_month)
+
+if not budgets_df.empty and not filtered_expenses.empty:
+    # Aggregate expenses by category for this month
+    # Note: filtered_expenses is already filtered by date range. 
+    # If the date range spans multiple months, this might be misleading if comparing to single month budget.
+    # For now, assume user selects a month or we just compare total spent in range vs budget.
+    
+    expense_by_cat = filtered_expenses.groupby('category')['amount_eur'].sum().reset_index()
+    
+    # Merge with budgets
+    # budgets_df has 'category_id', 'budget_amount', 'category'
+    # expense_by_cat has 'category', 'amount_eur'
+    
+    merged = pd.merge(budgets_df, expense_by_cat, on='category', how='left')
+    merged['amount_eur'] = merged['amount_eur'].fillna(0)
+    
+    # Display Progress
+    for index, row in merged.iterrows():
+        cat = row['category']
+        budget = row['budget_amount']
+        spent = row['amount_eur'] / conversion_rate # Convert to display
+        
+        if budget > 0:
+            pct = (spent / budget) * 100
+            pct = min(pct, 100) # Cap at 100 for bar, but show real % in text
+            
+            col_b1, col_b2 = st.columns([3, 1])
+            with col_b1:
+                st.write(f"**{cat}**")
+                # Color logic
+                bar_color = "green"
+                if pct > 100: bar_color = "red"
+                elif pct > 80: bar_color = "orange"
+                
+                st.progress(int(pct) if pct <= 100 else 100)
+            with col_b2:
+                st.caption(f"{spent:.0f} / {budget:.0f} ({int((spent/budget)*100)}%)")
+else:
+    st.info(f"No budgets set for {budget_month} or no expenses found.")
+
+st.divider()
+
 tab1, tab2, tab3 = st.tabs(["Spending Analysis", "Income Analysis", "Advanced Insights"])
 
 with tab1:

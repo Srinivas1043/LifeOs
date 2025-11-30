@@ -306,3 +306,51 @@ def get_investments():
     except Exception as e:
         st.error(f"Error fetching investments: {e}")
         return pd.DataFrame()
+
+# --- Budgets ---
+def add_budget(category_id, amount, month):
+    """Add or update a budget for a category and month."""
+    try:
+        supabase = get_authenticated_client()
+        user = st.session_state.get('user')
+        if not user:
+            st.error("User not authenticated")
+            return None
+            
+        # Check if budget exists
+        existing = supabase.table("budgets").select("id").eq("category_id", category_id).eq("month", month).execute()
+        
+        data = {
+            "category_id": category_id,
+            "budget_amount": amount,
+            "month": month,
+            "user_id": user.id
+        }
+        
+        if existing.data:
+            # Update
+            response = supabase.table("budgets").update(data).eq("id", existing.data[0]['id']).execute()
+        else:
+            # Insert
+            response = supabase.table("budgets").insert(data).execute()
+            
+        return response
+    except Exception as e:
+        st.error(f"Error saving budget: {e}")
+        return None
+
+def get_budgets(month):
+    """Fetch budgets for a specific month."""
+    try:
+        supabase = get_authenticated_client()
+        response = supabase.table("budgets").select("*, categories(name)").eq("month", month).execute()
+        
+        data = response.data
+        if data:
+            df = pd.json_normalize(data)
+            df.rename(columns={'categories.name': 'category'}, inplace=True)
+            return df
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error fetching budgets: {e}")
+        return pd.DataFrame()
