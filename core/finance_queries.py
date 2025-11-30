@@ -5,6 +5,16 @@ import streamlit as st
 supabase = init_supabase()
 
 # --- Helper Functions ---
+def add_category(name, type):
+    """Add a new category."""
+    try:
+        data = {"name": name, "type": type}
+        response = supabase.table("categories").insert(data).execute()
+        return response
+    except Exception as e:
+        st.error(f"Error adding category: {e}")
+        return None
+
 def get_categories(type_filter=None):
     """Fetch categories, optionally filtered by type (expense, income, etc.)."""
     try:
@@ -16,6 +26,21 @@ def get_categories(type_filter=None):
     except Exception as e:
         st.error(f"Error fetching categories: {e}")
         return pd.DataFrame()
+
+def add_account(name, type, balance, currency="EUR"):
+    """Add a new account."""
+    try:
+        data = {
+            "name": name, 
+            "type": type, 
+            "balance": balance, 
+            "currency": currency
+        }
+        response = supabase.table("accounts").insert(data).execute()
+        return response
+    except Exception as e:
+        st.error(f"Error adding account: {e}")
+        return None
 
 def get_accounts():
     """Fetch all accounts."""

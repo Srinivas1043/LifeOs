@@ -56,15 +56,30 @@ with tab1:
                 st.error(f"Login failed: {e}")
 
 with tab2:
+    st.markdown("### Create a new account")
     with st.form("signup_form"):
         new_email = st.text_input("Email")
         new_password = st.text_input("Password", type="password")
+        full_name = st.text_input("Full Name")
         signup_submitted = st.form_submit_button("Sign Up")
         
         if signup_submitted:
-            try:
-                response = supabase.auth.sign_up({"email": new_email, "password": new_password})
-                if response.user:
-                    st.success("Signup successful! Please check your email to confirm.")
-            except Exception as e:
-                st.error(f"Signup failed: {e}")
+            if not new_email or not new_password or not full_name:
+                st.error("Please fill in all fields.")
+            else:
+                try:
+                    # Pass full_name in metadata for the trigger to use
+                    response = supabase.auth.sign_up({
+                        "email": new_email, 
+                        "password": new_password,
+                        "options": {
+                            "data": {
+                                "full_name": full_name
+                            }
+                        }
+                    })
+                    if response.user:
+                        st.success("Signup successful! Please check your email to confirm.")
+                        st.info("After confirming, switch to the Login tab.")
+                except Exception as e:
+                    st.error(f"Signup failed: {e}")
