@@ -24,7 +24,12 @@ else:
                 inv_type = st.selectbox("Type", ["equity", "crypto", "mutual_fund", "etf", "fd", "gold"])
                 
             with col2:
-                amount = st.number_input("Total Amount", min_value=0.01, step=0.01)
+                col_amt, col_curr = st.columns([2, 1])
+                with col_amt:
+                    amount = st.number_input("Total Amount", min_value=0.01, step=0.01)
+                with col_curr:
+                    currency = st.selectbox("Currency", ["EUR", "USD", "INR", "GBP"])
+                
                 units = st.number_input("Units", min_value=0.0, step=0.001)
                 price = st.number_input("Price per Unit", min_value=0.0, step=0.01)
                 account = st.selectbox("Account", accounts_df['name'])
@@ -35,7 +40,7 @@ else:
                 cat_id = int(categories_df[categories_df['name'] == category].iloc[0]['id'])
                 acc_id = int(accounts_df[accounts_df['name'] == account].iloc[0]['id'])
                 
-                res = add_investment(date, amount, instrument, inv_type, action, acc_id, cat_id, units, price)
+                res = add_investment(date, amount, instrument, inv_type, action, acc_id, cat_id, units, price, currency)
                 if res:
                     st.success("Investment recorded!")
                     st.rerun()

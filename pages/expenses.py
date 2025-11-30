@@ -19,7 +19,11 @@ else:
             col1, col2 = st.columns(2)
             with col1:
                 date = st.date_input("Date")
-                amount = st.number_input("Amount", min_value=0.01, step=0.01)
+                col_amt, col_curr = st.columns([2, 1])
+                with col_amt:
+                    amount = st.number_input("Amount", min_value=0.01, step=0.01)
+                with col_curr:
+                    currency = st.selectbox("Currency", ["EUR", "USD", "INR", "GBP"])
                 category = st.selectbox("Category", categories_df['name'], key='cat_select')
                 
             with col2:
@@ -36,7 +40,7 @@ else:
                 cat_id = int(categories_df[categories_df['name'] == category].iloc[0]['id'])
                 acc_id = int(accounts_df[accounts_df['name'] == account].iloc[0]['id'])
                 
-                res = add_expense(date, amount, cat_id, acc_id, description, payment_method, vendor)
+                res = add_expense(date, amount, cat_id, acc_id, description, payment_method, currency, vendor)
                 
                 if res:
                     st.success("Expense added successfully!")

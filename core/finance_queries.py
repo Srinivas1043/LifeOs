@@ -64,9 +64,21 @@ def get_accounts():
         st.error(f"Error fetching accounts: {e}")
         return pd.DataFrame()
 
+def get_exchange_rates():
+    """Fetch exchange rates (Base: EUR)."""
+    try:
+        supabase = get_authenticated_client()
+        response = supabase.table("exchange_rates").select("*").execute()
+        data = response.data
+        # Convert to dict {currency: rate}
+        return {item['currency_code']: item['rate_to_eur'] for item in data}
+    except Exception as e:
+        st.error(f"Error fetching rates: {e}")
+        return {'EUR': 1.0}
+
 # --- Expenses ---
-def add_expense(date, amount, category_id, account_id, description, payment_method, vendor=None):
-    """Add a new expense."""
+def add_expense(date, amount, category_id, account_id, description, payment_method, currency="EUR", vendor=None):
+    """Add a new expense with currency conversion."""
     try:
         supabase = get_authenticated_client()
         user = st.session_state.get('user')
@@ -74,9 +86,16 @@ def add_expense(date, amount, category_id, account_id, description, payment_meth
             st.error("User not authenticated")
             return None
             
+        # Calculate EUR amount
+        rates = get_exchange_rates()
+        rate = rates.get(currency, 1.0)
+        amount_eur = amount * rate
+            
         data = {
             "date": str(date),
             "amount": amount,
+            "currency": currency,
+            "amount_eur": amount_eur,
             "category_id": category_id,
             "account_id": account_id,
             "description": description,
@@ -113,8 +132,8 @@ def get_expenses():
         return pd.DataFrame()
 
 # --- Income ---
-def add_income(date, amount, category_id, account_id, source, notes=None):
-    """Add a new income record."""
+def add_income(date, amount, category_id, account_id, source, currency="EUR", notes=None):
+    """Add a new income record with currency conversion."""
     try:
         supabase = get_authenticated_client()
         user = st.session_state.get('user')
@@ -122,9 +141,16 @@ def add_income(date, amount, category_id, account_id, source, notes=None):
             st.error("User not authenticated")
             return None
             
+        # Calculate EUR amount
+        rates = get_exchange_rates()
+        rate = rates.get(currency, 1.0)
+        amount_eur = amount * rate
+            
         data = {
             "date": str(date),
             "amount": amount,
+            "currency": currency,
+            "amount_eur": amount_eur,
             "category_id": category_id,
             "account_id": account_id,
             "source": source,
@@ -189,8 +215,8 @@ def get_saving_goals():
         return pd.DataFrame()
 
 # --- Investments ---
-def add_investment(date, amount, instrument_name, investment_type, action, account_id, category_id, units, price_per_unit):
-    """Add a new investment transaction."""
+def add_investment(date, amount, instrument_name, investment_type, action, account_id, category_id, units, price_per_unit, currency="EUR"):
+    """Add a new investment transaction with currency conversion."""
     try:
         supabase = get_authenticated_client()
         user = st.session_state.get('user')
@@ -198,9 +224,16 @@ def add_investment(date, amount, instrument_name, investment_type, action, accou
             st.error("User not authenticated")
             return None
             
+        # Calculate EUR amount
+        rates = get_exchange_rates()
+        rate = rates.get(currency, 1.0)
+        amount_eur = amount * rate
+            
         data = {
             "date": str(date),
             "amount": amount,
+            "currency": currency,
+            "amount_eur": amount_eur,
             "instrument_name": instrument_name,
             "investment_type": investment_type,
             "action": action,
