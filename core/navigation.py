@@ -122,20 +122,24 @@ def setup_navigation():
         st.divider()
         
         if module == "Finance":
-            st.page_link("app.py", label="Dashboard", icon="🏠")
-            st.page_link("pages/expenses.py", label="Expenses", icon="💸")
+            st.caption("Finance Module")
+            st.page_link("app.py", label="Overview", icon="🏠")
             st.page_link("pages/income.py", label="Income", icon="💰")
+            st.page_link("pages/expenses.py", label="Expenses", icon="💸")
             st.page_link("pages/investments.py", label="Investments", icon="📈")
+            st.page_link("pages/budget.py", label="Budget", icon="⚖️")
+            st.page_link("pages/transfer.py", label="Transfer", icon="💸")
             st.page_link("pages/savings.py", label="Savings Goals", icon="🎯")
             st.page_link("pages/tax.py", label="Tax Center", icon="🏛️")
-            st.page_link("pages/analytics.py", label="Analytics", icon="📊")
             st.page_link("pages/monthly_report.py", label="Monthly Report", icon="📅")
             
         elif module == "AI Tools":
+            st.caption("AI Tools")
             st.page_link("pages/smart_ingest.py", label="Smart Ingestor", icon="🤖")
             st.page_link("pages/ai_assistant.py", label="AI Assistant", icon="💬")
             
         elif module == "System":
+            st.caption("System")
             st.page_link("pages/settings.py", label="Settings", icon="⚙️")
             st.page_link("pages/admin.py", label="Admin", icon="🛡️")
             
@@ -145,4 +149,4 @@ def setup_navigation():
             st.session_state['authenticated'] = False
             st.rerun()
             
-        st.caption("v1.2.0 • Life OS")
+        st.caption("v1.3.0 • Life OS")

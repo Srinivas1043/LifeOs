@@ -354,3 +354,42 @@ def get_budgets(month):
     except Exception as e:
         st.error(f"Error fetching budgets: {e}")
         return pd.DataFrame()
+def add_transfer(date, amount, source_id, dest_id, notes, dest_amount=None, exchange_rate=1.0):
+    """
+    Records a transfer between two accounts and updates their balances.
+    Supports cross-currency transfers if dest_amount is provided.
+    """
+    try:
+        supabase = get_authenticated_client()
+        # If dest_amount is not provided, assume same currency (1:1)
+        final_dest_amount = dest_amount if dest_amount is not None else amount
+        
+        # 1. Record Transfer
+        response = supabase.table('transfers').insert({
+            "date": str(date),
+            "amount": amount,
+            "source_account_id": source_id,
+            "destination_account_id": dest_id,
+            "notes": notes,
+            "destination_amount": final_dest_amount,
+            "exchange_rate": exchange_rate
+        }).execute()
+        
+        # 2. Update Source Account (Decrease Balance)
+        src_res = supabase.table('accounts').select('balance').eq('id', source_id).execute()
+        if src_res.data:
+            curr_src = src_res.data[0]['balance']
+            new_src = curr_src - amount
+            supabase.table('accounts').update({'balance': new_src}).eq('id', source_id).execute()
+            
+        # 3. Update Destination Account (Increase Balance)
+        dest_res = supabase.table('accounts').select('balance').eq('id', dest_id).execute()
+        if dest_res.data:
+            curr_dest = dest_res.data[0]['balance']
+            new_dest = curr_dest + final_dest_amount
+            supabase.table('accounts').update({'balance': new_dest}).eq('id', dest_id).execute()
+            
+        return response
+    except Exception as e:
+        st.error(f"Error adding transfer: {e}")
+        return None

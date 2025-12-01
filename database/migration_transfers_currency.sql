@@ -1,0 +1,2 @@
+ALTER TABLE transfers ADD COLUMN IF NOT EXISTS destination_amount DECIMAL(10, 2);
+ALTER TABLE transfers ADD COLUMN IF NOT EXISTS exchange_rate DECIMAL(10, 6);
