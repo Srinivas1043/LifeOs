@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import datetime
 from core.finance_queries import get_categories, get_budgets, add_budget, get_expenses
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("Finance")
 
 st.title("⚖️ Budget Planner")
 

@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 from core.supabase_client import init_supabase
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("System")
 supabase = init_supabase()
 
 st.title("🛡️ Admin Dashboard")

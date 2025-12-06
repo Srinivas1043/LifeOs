@@ -4,9 +4,9 @@ import datetime
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from core.ai_client import init_groq
 from core.finance_queries import get_expenses, get_income, get_accounts
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("AI Tools")
 
 st.title("💬 AI Financial Assistant")
 st.caption("Ask questions about your spending, income, and financial health.")

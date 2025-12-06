@@ -3,11 +3,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from core.finance_queries import get_expenses, get_income, get_investments, get_accounts, get_exchange_rates, get_budgets
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 import datetime
-
 # --- Setup ---
-setup_navigation()
+setup_navigation_with_context("Finance")
 st.title("💰 Financial Overview")
 
 # --- Data Loading ---

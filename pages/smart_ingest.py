@@ -5,9 +5,9 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from core.ai_client import init_groq
 from core.finance_queries import get_categories, get_accounts, add_expense
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("AI Tools")
 
 st.title("🤖 Smart Ingestor")
 st.caption("Paste text to extract details.")

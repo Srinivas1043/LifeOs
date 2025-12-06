@@ -163,3 +163,13 @@
 - [x] Verification <!-- id: 17 -->
     - [x] Test Data Entry <!-- id: 18 -->
     - [x] Verify Calculations <!-- id: 19 -->
+- [ ] Module: Personal Development & ROI <!-- id: 42 -->
+    - [x] Design Schema (Goals, Activities, Logs) <!-- id: 43 -->
+    - [x] Update Database (Supabase SQL) <!-- id: 44 -->
+    - [x] Implement Goals & Activities Setup UI <!-- id: 45 -->
+    - [x] Implement Logging & Tracking UI <!-- id: 46 -->
+    - [x] Create "Life ROI" Dashboard <!-- id: 47 -->
+- [ ] UI Overhaul <!-- id: 48 -->
+    - [ ] Implement Top Navigation (Remove Sidebar) <!-- id: 49 -->
+    - [ ] Update Global CSS (Premium UX) <!-- id: 50 -->
+    - [ ] Refactor Navigation Logic (State Management) <!-- id: 51 -->

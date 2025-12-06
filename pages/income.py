@@ -3,9 +3,9 @@ import pandas as pd
 import plotly.express as px
 import datetime
 from core.finance_queries import get_categories, get_accounts, add_income, get_income
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("Finance")
 
 st.title("💰 Income")
 

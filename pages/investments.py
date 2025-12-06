@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 from core.finance_queries import get_categories, get_accounts, add_investment, get_investments
-from core.navigation import setup_navigation
+from core.navigation import setup_navigation_with_context
 
-setup_navigation()
+setup_navigation_with_context("Finance")
 
 st.title("📈 Investments")
 

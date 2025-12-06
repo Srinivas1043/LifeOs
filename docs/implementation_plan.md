@@ -102,6 +102,45 @@ Build a modular "Life OS" starting with a **Financial Tracker**. The application
 #### [MODIFY] [analytics.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/pages/analytics.py)
 - Spending breakdown and trends.
 
+### Module: Personal Development & ROI
+#### [NEW] [database/migration_personal.sql](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/database/migration_personal.sql)
+- **`life_goals` Table**:
+    - `id`, `user_id`, `title`, `description`, `category` (Health, Career, Social, Hobby), `target_date`, `status` (Active, Completed, Dropped).
+- **`activities` Table** (The types of things you do):
+    - `id`, `user_id`, `name`, `goal_id` (optional link), `default_happiness` (1-10), `return_type` (Financial, Emotional/Inner Peace, Health, Social, None), `impact_score` (1-10 estimate of overall life-value).
+- **`activity_logs` Table**:
+    - `id`, `user_id`, `activity_id`, `date`, `duration_minutes`, `happiness_score` (actual feeling), `impact_score` (actual value), `notes`.
+
+#### [NEW] [pages/personal_goals.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/pages/personal_goals.py)
+- **Goal Setting**: Create and manage high-level life goals.
+- **Activity Library**: Define standard activities (e.g., "Gym", "Coding", "Netflix") with their default "ROI parameters".
+
+#### [NEW] [pages/tracker.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/pages/tracker.py)
+- **Daily Logger**: Quick entry form to log what you did today.
+- **Sliders**: For Happiness (Current Feel) and Productivity/ROI.
+
+#### [NEW] [pages/life_roi.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/pages/life_roi.py)
+- **Scatter Plot**: "Happiness vs. Impact" matrix.
+    - Top Right (High Happy, High Impact) = Keep doing.
+    - Top Left (Low Happy, High Impact) = Grind/Discipline.
+    - Bottom Right (High Happy, Low Impact) = Guilty Pleasures.
+    - Bottom Left (Low Happy, Low Impact) = Eliminate.
+- **Time Analysis**: Where is your time going vs. where is your value coming from?
+
+### UI Overhaul (Top Navigation)
+#### [MODIFY] [core/navigation.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/core/navigation.py)
+- **Top Navigation Bar**: Replace sidebar with a two-tier top navigation system.
+    - **Tier 1 (Modules)**: Finance | Personal Dev | AI Tools | System
+    - **Tier 2 (Pages)**: Dynamic buttons based on selected module.
+- **Styling**: `styles.css` (injected) for a modern, navbar look.
+- **User Profile**: Move to top-right corner.
+
+#### [MODIFY] [.streamlit/config.toml](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/.streamlit/config.toml)
+- Ensure `client.showSidebarNavigation = False`.
+
+#### [MODIFY] [app.py](file:///c:/Users/User/OneDrive/Desktop/Personal/MIne/Personal%20Trackings/LifeOs/app.py) & All Pages
+- Ensure `setup_navigation()` is called.
+
 ## Verification Plan
 
 ### Automated Tests
